@@ -10,31 +10,51 @@ import (
 	"log"
 	"os"
 	"regexp"
-	"sync"
 
 	"github.com/RoySung/Go-Combinate-Images/settings"
 )
 
-var wg sync.WaitGroup
-
 func main() {
 	log.Print("Main")
-
 	assetsFiles := getAssetsFiles(settings.Config.Folders)
-
-	// log.Print(assetsFiles)
 	filesSets := getCombination(assetsFiles)
-	// log.Print(filesSets)
-	wg.Add(len(filesSets))
-	for _, set := range filesSets {
-		go mergeImagesSet(set)
+
+	// wg.Add(len(filesSets))
+	// for _, set := range filesSets {
+	// 	go mergeImagesSet(set)
+	// }
+	// wg.Wait()
+
+	jobsChan := make(chan []string, 1024)
+	resultChan := make(chan string, len(filesSets))
+	// finishChan := make(chan bool)
+	workerCount := 16
+
+	for i := 0; i < workerCount; i++ {
+		go worker(mergeImagesSet, jobsChan, resultChan)
 	}
-	wg.Wait()
+
+	for _, set := range filesSets {
+		jobsChan <- set
+	}
+	close(jobsChan)
+
+	// <-finishChan
+
+	for i := 0; i < len(filesSets); i++ {
+		log.Println("Path: ", <-resultChan)
+	}
+
 	log.Print("Tasks is Done !")
 }
 
-func mergeImagesSet(set []string) {
-	defer wg.Done()
+func worker(process func([]string) string, ch chan []string, result chan string) {
+	for job := range ch {
+		result <- process(job)
+	}
+}
+
+func mergeImagesSet(set []string) string {
 	var firstImg image.Image
 	var canvasRange image.Rectangle
 	var result draw.Image
@@ -64,7 +84,7 @@ func mergeImagesSet(set []string) {
 	// open file to save
 	outputFilePath += ".png"
 	outputFilePath = fmt.Sprintf("./assets/output/%s", outputFilePath)
-	log.Print(outputFilePath)
+	// log.Print(outputFilePath)
 	dstFile, err := os.Create(outputFilePath)
 	if err != nil {
 		log.Fatal(err)
@@ -76,7 +96,7 @@ func mergeImagesSet(set []string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
+	return outputFilePath
 }
 
 func getCombination(data [][]string) [][]string {
@@ -131,6 +151,7 @@ func getAssetsFiles(folderNames []string) [][]string {
 
 func getImageFromFilePath(filePath string) (image.Image, error) {
 	f, err := os.Open(filePath)
+	defer f.Close()
 	if err != nil {
 		return nil, err
 	}
