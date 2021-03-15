@@ -6,13 +6,17 @@ import (
 	"image/draw"
 	_ "image/jpeg"
 	"image/png"
+	"io/fs"
 	"io/ioutil"
 	"log"
 	"os"
 	"regexp"
 
 	"github.com/RoySung/Go-Combinate-Images/settings"
+	"github.com/thoas/go-funk"
 )
+
+var allowFileTypes = [...]string{".png", ".jpg", ".jpeg"}
 
 func main() {
 	log.Print("Main")
@@ -59,7 +63,7 @@ func mergeImagesSet(set []string) string {
 	var canvasRange image.Rectangle
 	var result draw.Image
 	var outputFilePath string
-	fileRegex := regexp.MustCompile(`([^\/\.]+)\.[^\/]+`)
+	fileRegex := regexp.MustCompile(`([^\/\.]+)\.[^\/]+$`)
 
 	for _, path := range set {
 		img, err := getImageFromFilePath(path)
@@ -73,7 +77,6 @@ func mergeImagesSet(set []string) string {
 		}
 
 		draw.Draw(result, canvasRange, img, image.ZP, draw.Over)
-
 		fileName := fileRegex.FindStringSubmatch(path)[1]
 		if outputFilePath != "" {
 			outputFilePath += "-"
@@ -83,7 +86,8 @@ func mergeImagesSet(set []string) string {
 
 	// open file to save
 	outputFilePath += ".png"
-	outputFilePath = fmt.Sprintf("./assets/output/%s", outputFilePath)
+	rootPath := settings.GetRootPath()
+	outputFilePath = fmt.Sprintf("%s/assets/output/%s", rootPath, outputFilePath)
 	// log.Print(outputFilePath)
 	dstFile, err := os.Create(outputFilePath)
 	if err != nil {
@@ -134,18 +138,30 @@ func getAssetsFiles(folderNames []string) [][]string {
 	result := make([][]string, len(folderNames))
 
 	for index, foldeName := range folderNames {
-		dirPath := fmt.Sprintf("assets/%s", foldeName)
+		rootPath := settings.GetRootPath()
+		dirPath := fmt.Sprintf("%s/assets/%s", rootPath, foldeName)
 		files, err := ioutil.ReadDir(dirPath)
 		if err != nil {
 			log.Fatal(err)
 		}
+		files = funk.Filter(files, func(fileInfo fs.FileInfo) bool {
+			return funk.Contains(allowFileTypes, func(fileType string) bool {
+				return funk.Contains(fileInfo.Name(), fileType)
+			})
+		}).([]fs.FileInfo)
 
 		row := make([]string, len(files))
 		for index, file := range files {
 			row[index] = fmt.Sprintf("%s/%s", dirPath, file.Name())
 		}
+		// row = funk.Filter(row, func(path string) bool {
+		// 	return funk.Contains(allowFileTypes, func(fileType string) bool {
+		// 		return funk.Contains(path, fileType)
+		// 	})
+		// }).([]string)
 		result[index] = row
 	}
+
 	return result
 }
 

@@ -1,4 +1,4 @@
-// +build !release
+// +build release
 
 package settings
 
@@ -8,6 +8,7 @@ import (
 	"io/ioutil"
 	"log"
 	"os"
+	"path/filepath"
 )
 
 type settingsType struct {
@@ -33,7 +34,7 @@ func init() {
 }
 
 func GetRootPath() string {
-	root, _ := os.Getwd()
+	root, _ := filepath.Abs(filepath.Dir(os.Args[0]))
 
 	return root
 }
