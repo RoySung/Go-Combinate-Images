@@ -6,6 +6,16 @@
 
 It is tool that merge images from different combination.
 
+## How To Use Executable File
+
+1. Download file from release
+
+2. Create `assets/` and `assets/output` folders
+
+3. Create `settings.json` file
+
+4. Using command line to execute it
+
 ## Build
 
 ```sh
@@ -23,6 +33,7 @@ Output files to ./assets/output .
 
 ## Setting Example
 
+settings.json
 ```json
   {
     "folders": [
