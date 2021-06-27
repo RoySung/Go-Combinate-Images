@@ -1,1 +1,10 @@
-tmp
+# macOS
+**/.DS_Store
+
+# Dev builds
+**/build/
+**/dist/
+
+# Tests
+**/tmp/
+*.out
