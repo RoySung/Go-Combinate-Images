@@ -11,6 +11,7 @@ import (
 	"log"
 	"os"
 	"regexp"
+	"runtime"
 
 	"github.com/RoySung/Go-Combinate-Images/settings"
 	"github.com/thoas/go-funk"
@@ -32,7 +33,8 @@ func main() {
 	jobsChan := make(chan []string, 1024)
 	resultChan := make(chan string, len(filesSets))
 	// finishChan := make(chan bool)
-	workerCount := 16
+	workerCount := runtime.NumCPU()
+	fmt.Println("worker count: ", workerCount)
 
 	for i := 0; i < workerCount; i++ {
 		go worker(mergeImagesSet, jobsChan, resultChan)
@@ -52,8 +54,8 @@ func main() {
 	log.Print("Tasks is Done !")
 }
 
-func worker(process func([]string) string, ch chan []string, result chan string) {
-	for job := range ch {
+func worker(process func([]string) string, jobs <-chan []string, result chan<- string) {
+	for job := range jobs {
 		result <- process(job)
 	}
 }
@@ -100,6 +102,7 @@ func mergeImagesSet(set []string) string {
 	if err != nil {
 		log.Fatal(err)
 	}
+
 	return outputFilePath
 }
 
@@ -118,7 +121,9 @@ func getCombination(data [][]string) [][]string {
 		}
 		for _, preSet := range acc {
 			for _, item := range list {
-				set := append(preSet, item)
+				set := make([]string, 0, len(preSet)+1)
+				set = append(set, preSet...)
+				set = append(set, item)
 				result = append(result, set)
 			}
 		}
