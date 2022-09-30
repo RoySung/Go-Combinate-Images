@@ -10,7 +10,7 @@ It is tool that merge images from different combination.
 
 1. Download file from release
 
-2. Create `assets/` and `assets/output` folders
+2. Create `assets/` and `assets/output` folders
 
 3. Create `settings.json` file
 
